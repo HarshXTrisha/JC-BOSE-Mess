@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YumTrack - Student Meal Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating {
+            animation: float 4s ease-in-out infinite;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #a5b4fc 0%, #fbcfe8 100%);
+        }
+        .food-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd' opacity='0.1'%3E%3Cg fill='%239C92AC' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .emoji-rating:hover {
+            transform: scale(1.2);
+            transition: all 0.2s ease;
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        .qr-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .qr-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            max-width: 90%;
+        }
+        #qrCode {
+            margin: 1rem auto;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="font-['Poppins'] min-h-screen gradient-bg food-pattern flex items-center justify-center p-4">
+    <div class="max-w-4xl w-full bg-white rounded-3xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-indigo-600 text-white p-6 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-indigo-600 p-2 rounded-full floating">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-utensils">
+                        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                        <path d="M7 2v20"/>
+                        <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold">YumTrack</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                    </svg>
+                    <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">3</span>
+                </div>
+                <div class="h-8 w-8 bg-indigo-400 rounded-full flex items-center justify-center text-white font-medium">JS</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="homePage" class="page active p-6">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-800">Hey there, <span class="text-indigo-600">John!</span></h2>
+                <p class="text-gray-600">"Track your tummy, not your wallet!"</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-indigo-50 rounded-xl p-4 flex items-center">
+                    <div class="bg-indigo-100 p-3 rounded-full mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card text-indigo-600">
+                            <rect width="20" height="14" x="2" y="5" rx="2"/>
+                            <line x1="2" x2="22" y1="10" y2="10"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Balance</p>
+                        <p id="balanceAmount" class="font-bold text-gray-800">₹1,250</p>
+                    </div>
+                </div>
+                <div class="bg-pink-50 rounded-xl p-4 flex items-center">
+                    <div class="bg-pink-100 p-3 rounded-full mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days text-pink-600">
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                            <line x1="16" x2="16" y1="2" y2="6"/>
+                            <line x1="8" x2="8" y1="2" y2="6"/>
+                            <line x1="3" x2="21" y1="10" y2="10"/>
+                            <path d="M8 14h.01"/>
+                            <path d="M12 14h.01"/>
+                            <path d="M16 14h.01"/>
+                            <path d="M8 18h.01"/>
+                            <path d="M12 18h.01"/>
+                            <path d="M16 18h.01"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Meals this week</p>
+                        <p class="font-bold text-gray-800">12/21</p>
+                    </div>
+                </div>
+                <div class="bg-teal-50 rounded-xl p-4 flex items-center">
+                    <div class="bg-teal-100 p-3 rounded-full mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star text-teal-600">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Avg. Rating</p>
+                        <p class="font-bold text-gray-800">4.2/5</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Ring -->
+            <div class="bg-white rounded-xl p-6 shadow-sm mb-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Your meal progress</h3>
+                <div class="flex flex-col items-center">
+                    <div class="relative w-40 h-40 mb-4">
+                        <svg class="w-full h-full" viewBox="0 0 100 100">
+                            <!-- Background circle -->
+                            <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
+                            <!-- Progress circle -->
+                            <circle class="text-indigo-600 progress-ring__circle" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" stroke-dasharray="251.2" stroke-dashoffset="calc(251.2 - (251.2 * 57) / 100)" />
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center flex-col">
+                            <span class="text-3xl font-bold text-indigo-600">57%</span>
+                            <span class="text-sm text-gray-500">Weekly goal</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check mr-1">
+                                <path d="M20 6 9 17l-5-5"/>
+                            </svg>
+                            12 meals
+                        </span>
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock mr-1">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            9 left
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <button id="bookMealBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl p-4 flex items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle mr-2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 12h8"/>
+                        <path d="M12 8v8"/>
+                    </svg>
+                    Book Meal
+                </button>
+                <button id="addMoneyBtn" class="bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 rounded-xl p-4 flex items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-credit-card mr-2">
+                        <rect width="20" height="14" x="2" y="5" rx="2"/>
+                        <line x1="2" x2="22" y1="10" y2="10"/>
+                    </svg>
+                    Add Money
+                </button>
+            </div>
+
+            <!-- Today's Menu -->
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Today's Menu</h3>
+                    <span id="bookingDeadline" class="text-sm text-indigo-600 font-medium"></span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center p-3 bg-indigo-50 rounded-lg">
+                        <div class="bg-white p-2 rounded-lg mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun text-yellow-500">
+                                <circle cx="12" cy="12" r="4"/>
+                                <path d="M12 2v2"/>
+                                <path d="M12 20v2"/>
+                                <path d="m4.93 4.93 1.41 1.41"/>
+                                <path d="m17.66 17.66 1.41 1.41"/>
+                                <path d="M2 12h2"/>
+                                <path d="M20 12h2"/>
+                                <path d="m6.34 17.66-1.41 1.41"/>
+                                <path d="m19.07 4.93-1.41 1.41"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium">Breakfast</h4>
+                            <p class="text-sm text-gray-600">Poha, Upma, Bread, Tea</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium">₹15</p>
+                            <div class="flex space-x-2 justify-end">
+                                <span class="text-xs text-green-600">Booked ✅</span>
+                                <button class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded" onclick="cancelMeal('breakfast', 15)">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="lunchMeal" class="flex items-center p-3 bg-white border border-gray-100 rounded-lg hover:bg-indigo-50 transition-colors">
+                        <div class="bg-white p-2 rounded-lg mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sunset text-orange-500">
+                                <path d="M12 10V2"/>
+                                <path d="m4.93 10.93 1.41 1.41"/>
+                                <path d="M2 18h2"/>
+                                <path d="M20 18h2"/>
+                                <path d="m19.07 10.93-1.41 1.41"/>
+                                <path d="M22 22H2"/>
+                                <path d="m8 6 4-4 4 4"/>
+                                <path d="M16 18a4 4 0 0 0-8 0"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium">Lunch</h4>
+                            <p class="text-sm text-gray-600">Rice, Dal, Sabzi, Salad</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium">₹55</p>
+                            <button id="bookLunchBtn" class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">Book Now</button>
+                        </div>
+                    </div>
+                    
+                    <div id="dinnerMeal" class="flex items-center p-3 bg-white border border-gray-100 rounded-lg hover:bg-indigo-50 transition-colors">
+                        <div class="bg-white p-2 rounded-lg mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon text-blue-500">
+                                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-medium">Dinner</h4>
+                            <p class="text-sm text-gray-600">Roti, Sabzi, Dal, Rice</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium">₹55</p>
+                            <button id="bookDinnerBtn" class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">Book Now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendar Page -->
+        <div id="calendarPage" class="page p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-800">Meal Calendar</h2>
+                <button id="backToHomeFromCalendar" class="text-indigo-600 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left mr-1">
+                        <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Back
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">October 2023</h3>
+                    <div class="flex space-x-2">
+                        <button class="p-2 rounded-full hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left">
+                                <path d="m15 18-6-6 6-6"/>
+                            </svg>
+                        </button>
+                        <button class="p-2 rounded-full hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right">
+                                <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2 mb-2">
+                    <div class="text-center font-medium text-sm text-gray-500">Sun</div>
+                    <div class="text-center font-medium text-sm text-gray-500">Mon</div>
+                    <div class="text-center font-medium text-sm text-gray-500">Tue</div>
+                    <div class="text-center font-medium text-sm text-gray-500">Wed</div>
+                    <div class="text-center font-medium text-sm text-gray-500">Thu</div>
+                    <div class="text-center font-medium text-sm text-gray-500">Fri</div>
+                    <div class="text-center font-medium text-sm text-gray-500">Sat</div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2">
+                    <div class="h-12 flex items-center justify-center text-gray-400">29</div>
+                    <div class="h-12 flex items-center justify-center text-gray-400">30</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 font-medium">1</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">2</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">3</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">4</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">5</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">6</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">7</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">8</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">9</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">10</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">11</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">12</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg bg-green-50 text-green-600 font-medium">13</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">14</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">15</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">16</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">17</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">18</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">19</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">20</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">21</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">22</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">23</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">24</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">25</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">26</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">27</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">28</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">29</div>
+                    <div class="h-12 flex items-center justify-center rounded-lg hover:bg-gray-100">30</div>
+                    <div class="h-12 flex items-center justify-center text-gray-400">1</div>
+                    <div class="h-12 flex items-center justify-center text-gray-400">2</div>
+                </div>
+
+                <div class="mt-6 space-y-4">
+                    <h4 class="font-medium text-gray-800">Legend</h4>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full bg-indigo-100 border border-indigo-300"></div>
+                        <span class="text-sm">Today</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full bg-green-100 border border-green-300"></div>
+                        <span class="text-sm">Meals booked</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full bg-red-100 border border-red-300"></div>
+                        <span class="text-sm">Meals cancelled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Page -->
+        <div id="qrCodePage" class="page p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-800">My QR Code</h2>
+                <button id="backToHomeFromQr" class="text-indigo-600 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left mr-1">
+                        <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Back
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center">
+                <h3 class="text-lg font-bold mb-2">Meal Verification QR</h3>
+                <p class="text-sm text-gray-600 mb-6">Show this to the mess owner when collecting your meal</p>
+                
+                <div id="qrCodeDisplay" class="p-4 bg-white border border-gray-200 rounded-lg mb-6"></div>
+                
+                <div class="text-center">
+                    <p class="font-medium">John Smith</p>
+                    <p class="text-sm text-gray-500">Student ID: JS2023</p>
+                    <p class="text-sm text-gray-500 mt-2">Valid for today: <span id="currentDate" class="font-medium"></span></p>
+                </div>
+                
+                <button id="refreshQrBtn" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw mr-2">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                        <path d="M16 16h5v5"/>
+                    </svg>
+                    Refresh QR Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bg-white border-t border-gray-100 flex justify-around p-3">
+            <button id="homeBtn" class="p-2 rounded-full text-indigo-600 bg-indigo-50">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home">
+                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </button>
+            <button id="calendarBtn" class="p-2 rounded-full text-gray-500 hover:text-indigo-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar">
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                    <line x1="16" x2="16" y1="2" y2="6"/>
+                    <line x1="8" x2="8" y1="2" y2="6"/>
+                    <line x1="3" x2="21" y1="10" y2="10"/>
+                </svg>
+            </button>
+            <button id="qrCodeBtn" class="p-2 rounded-full text-gray-500 hover:text-indigo-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-qr-code">
+                    <rect width="5" height="5" x="3" y="3" rx="1"/>
+                    <rect width="5" height="5" x="16" y="3" rx="1"/>
+                    <rect width="5" height="5" x="3" y="16" rx="1"/>
+                    <path d="M21 16h-3a2 2 0 0 0-2 2v3"/>
+                    <path d="M21 21v.01"/>
+                    <path d="M12 7v3a2 2 0 0 1-2 2H7"/>
+                    <path d="M3 12h.01"/>
+                    <path d="M12 3h.01"/>
+                    <path d="M12 16v.01"/>
+                    <path d="M16 12h1"/>
+                    <path d="M21 12v.01"/>
+                    <path d="M12 21v-1"/>
+                </svg>
+            </button>
+            <button id="settingsBtn" class="p-2 rounded-full text-gray-500 hover:text-indigo-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a6 6 0 0 1 0 11.64v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a6 6 0 0 1 0-11.64V4a2 2 0 0 0-2-2z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Simple animation for emoji ratings
+        document.querySelectorAll('.emoji-rating').forEach(emoji => {
+            emoji.addEventListener('mouseenter', () => {
+                emoji.style.transform = 'scale(1.2)';
+            });
+            emoji.addEventListener('mouseleave', () => {
+                emoji.style.transform = 'scale(1)';
+            });
+        });
+        
+        // Update progress ring animation
+        function updateProgressRing(percent) {
+            const circle = document.querySelector('.progress-ring__circle');
+            const radius = circle.r.baseVal.value;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (percent / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        // Initialize with 57% progress
+        updateProgressRing(57);
+
+        // Meal booking deadlines
+        function updateBookingDeadline() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            
+            let deadlineText = "";
+            let isBookingClosed = false;
+            
+            // Breakfast deadline: 7 AM (closes at 7 AM, served at 8 AM)
+            // Lunch deadline: 11 AM (closes at 11 AM, served at 12 PM)
+            // Dinner deadline: 7 PM (closes at 7 PM, served at 8 PM)
+            
+            if (hours < 11) {
+                // Before lunch deadline
+                const timeLeft = (10 - hours) * 3600 + (60 - minutes) * 60 + (60 - seconds);
+                const hoursLeft = Math.floor(timeLeft / 3600);
+                const minsLeft = Math.floor((timeLeft % 3600) / 60);
+                const secsLeft = timeLeft % 60;
+                deadlineText = `Lunch booking closes in ${hoursLeft}h ${minsLeft}m ${secsLeft}s`;
+                
+                // Enable lunch booking button
+                document.getElementById('bookLunchBtn').disabled = false;
+                document.getElementById('bookLunchBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                // Disable dinner booking if it's before 7 PM
+                if (hours < 19) {
+                    document.getElementById('bookDinnerBtn').disabled = false;
+                    document.getElementById('bookDinnerBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    document.getElementById('bookDinnerBtn').disabled = true;
+                    document.getElementById('bookDinnerBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                    document.getElementById('bookDinnerBtn').textContent = "Closed";
+                }
+            } else if (hours < 19) {
+                // Between lunch and dinner deadlines
+                const timeLeft = (18 - hours) * 3600 + (60 - minutes) * 60 + (60 - seconds);
+                const hoursLeft = Math.floor(timeLeft / 3600);
+                const minsLeft = Math.floor((timeLeft % 3600) / 60);
+                const secsLeft = timeLeft % 60;
+                deadlineText = `Dinner booking closes in ${hoursLeft}h ${minsLeft}m ${secsLeft}s`;
+                
+                // Disable lunch booking
+                document.getElementById('bookLunchBtn').disabled = true;
+                document.getElementById('bookLunchBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('bookLunchBtn').textContent = "Closed";
+                
+                // Enable dinner booking
+                document.getElementById('bookDinnerBtn').disabled = false;
+                document.getElementById('bookDinnerBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                // After dinner deadline
+                deadlineText = "Meal booking closed for today";
+                isBookingClosed = true;
+                
+                // Disable both lunch and dinner booking
+                document.getElementById('bookLunchBtn').disabled = true;
+                document.getElementById('bookLunchBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('bookLunchBtn').textContent = "Closed";
+                
+                document.getElementById('bookDinnerBtn').disabled = true;
+                document.getElementById('bookDinnerBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('bookDinnerBtn').textContent = "Closed";
+            }
+            
+            document.getElementById('bookingDeadline').textContent = deadlineText;
+            
+            // If booking is closed, disable the main book meal button
+            if (isBookingClosed) {
+                document.getElementById('bookMealBtn').disabled = true;
+                document.getElementById('bookMealBtn').classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                document.getElementById('bookMealBtn').disabled = false;
+                document.getElementById('bookMealBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        // Update deadline every second
+        updateBookingDeadline();
+        setInterval(updateBookingDeadline, 1000);
+
+        // Balance management
+        let balance = 1250; // Initial balance
+
+        function updateBalance() {
+            document.getElementById('balanceAmount').textContent = `₹${balance.toLocaleString('en-IN')}`;
+        }
+
+        // Button functions
+        document.getElementById('bookMealBtn').addEventListener('click', function() {
+            alert('Redirecting to meal booking page...');
+            // In a real app, this would navigate to a booking page
+        });
+        
+        document.getElementById('addMoneyBtn').addEventListener('click', function() {
+            const amount = prompt('Enter amount to add:');
+            if (amount && !isNaN(amount) && amount > 0) {
+                balance += parseFloat(amount);
+                updateBalance();
+                alert(`₹${amount} added successfully! New balance: ₹${balance}`);
+            } else {
+                alert('Please enter a valid amount');
+            }
+        });
+        
+        document.getElementById('bookLunchBtn').addEventListener('click', function() {
+            if (balance >= 55) {
+                balance -= 55;
+                updateBalance();
+                alert('Lunch booked successfully! ₹55 deducted from your balance.');
+                this.disabled = true;
+                this.classList.add('opacity-50', 'cursor-not-allowed');
+                this.textContent = "Booked";
+            } else {
+                alert('Insufficient balance. Please add money to your account.');
+            }
+        });
+        
+        document.getElementById('bookDinnerBtn').addEventListener('click', function() {
+            if (balance >= 55) {
+                balance -= 55;
+                updateBalance();
+                alert('Dinner booked successfully! ₹55 deducted from your balance.');
+                this.disabled = true;
+                this.classList.add('opacity-50', 'cursor-not-allowed');
+                this.textContent = "Booked";
+            } else {
+                alert('Insufficient balance. Please add money to your account.');
+            }
+        });
+
+        // Cancel meal function
+        function cancelMeal(mealType, amount) {
+            const cancellationFee = 10;
+            const refundAmount = amount - cancellationFee;
+            
+            if (confirm(`Cancel ${mealType}? You will be refunded ₹${refundAmount} (₹10 cancellation fee applies).`)) {
+                balance += refundAmount;
+                updateBalance();
+                alert(`${mealType} cancelled. ₹${refundAmount} refunded to your balance.`);
+                
+                // Update UI to show cancellation
+                const mealElement = document.querySelector(`#${mealType}Meal`);
+                if (mealElement) {
+                    const statusElement = mealElement.querySelector('.text-green-600');
+                    if (statusElement) {
+                        statusElement.textContent = "Cancelled ❌";
+                        statusElement.classList.remove('text-green-600');
+                        statusElement.classList.add('text-red-600');
+                    }
+                }
+            }
+        }
+        
+        // Page navigation
+        document.getElementById('calendarBtn').addEventListener('click', function() {
+            document.getElementById('homePage').classList.remove('active');
+            document.getElementById('calendarPage').classList.add('active');
+            document.getElementById('qrCodePage').classList.remove('active');
+            
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('homeBtn').classList.add('text-gray-500');
+            document.getElementById('calendarBtn').classList.add('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('calendarBtn').classList.remove('text-gray-500');
+            document.getElementById('qrCodeBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('qrCodeBtn').classList.add('text-gray-500');
+        });
+        
+        document.getElementById('qrCodeBtn').addEventListener('click', function() {
+            document.getElementById('homePage').classList.remove('active');
+            document.getElementById('calendarPage').classList.remove('active');
+            document.getElementById('qrCodePage').classList.add('active');
+            
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('homeBtn').classList.add('text-gray-500');
+            document.getElementById('calendarBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('calendarBtn').classList.add('text-gray-500');
+            document.getElementById('qrCodeBtn').classList.add('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('qrCodeBtn').classList.remove('text-gray-500');
+            
+            // Generate QR code
+            generateQrCode();
+        });
+        
+        document.getElementById('homeBtn').addEventListener('click', function() {
+            document.getElementById('homePage').classList.add('active');
+            document.getElementById('calendarPage').classList.remove('active');
+            document.getElementById('qrCodePage').classList.remove('active');
+            
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.add('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('homeBtn').classList.remove('text-gray-500');
+            document.getElementById('calendarBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('calendarBtn').classList.add('text-gray-500');
+            document.getElementById('qrCodeBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('qrCodeBtn').classList.add('text-gray-500');
+        });
+        
+        document.getElementById('backToHomeFromCalendar').addEventListener('click', function() {
+            document.getElementById('homePage').classList.add('active');
+            document.getElementById('calendarPage').classList.remove('active');
+            
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.add('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('homeBtn').classList.remove('text-gray-500');
+            document.getElementById('calendarBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('calendarBtn').classList.add('text-gray-500');
+        });
+        
+        document.getElementById('backToHomeFromQr').addEventListener('click', function() {
+            document.getElementById('homePage').classList.add('active');
+            document.getElementById('qrCodePage').classList.remove('active');
+            
+            // Update nav buttons
+            document.getElementById('homeBtn').classList.add('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('homeBtn').classList.remove('text-gray-500');
+            document.getElementById('qrCodeBtn').classList.remove('text-indigo-600', 'bg-indigo-50');
+            document.getElementById('qrCodeBtn').classList.add('text-gray-500');
+        });
+        
+        // QR Code generation
+        function generateQrCode() {
+            const qr = qrcode(0, 'L');
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            
+            qr.addData(`YUMTRACK-MEAL-VERIFY\nStudent: John Smith\nID: JS2023\nDate: ${dateStr}\nBalance: ₹${balance}`);
+            qr.make();
+            
+            const qrCodeElement = document.getElementById('qrCodeDisplay');
+            qrCodeElement.innerHTML = '';
+            qrCodeElement.appendChild(qr.createImgTag(4));
+            
+            document.getElementById('currentDate').textContent = dateStr;
+        }
+        
+        document.getElementById('refreshQrBtn').addEventListener('click', generateQrCode);
+        
+        // Settings button
+        document.getElementById('settingsBtn').addEventListener('click', function() {
+            alert('Opening settings...');
+            // In a real app, this would show settings
+        });
+        
+        // Initialize QR code on page load
+        generateQrCode();
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=therealcoderharsh/jc-bose" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
+<script>
+    const name = localStorage.getItem("userName");
+    const email = localStorage.getItem("userEmail");
+    const pic = localStorage.getItem("userPic");
+  
+    if (name && email && pic) {
+      document.getElementById("username").textContent = name;
+      document.getElementById("email").textContent = email;
+      document.getElementById("profile-pic").src = pic;
+    } else {
+      window.location.href = "signin.html"; // Not logged in
+    }
+  </script>
+  

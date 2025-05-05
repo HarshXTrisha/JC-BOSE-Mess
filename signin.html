@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In with Google</title>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+
+    <style>
+      /* Basic reset */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f7fa;
+        margin: 0;
+      }
+
+      .container {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 100%;
+        max-width: 400px;
+      }
+
+      h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      #googleSignInDiv {
+        margin-top: 20px;
+      }
+
+      .footer {
+        margin-top: 20px;
+        font-size: 14px;
+        color: #888;
+      }
+
+      .footer a {
+        text-decoration: none;
+        color: #007bff;
+      }
+
+      .footer a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>Sign in with Google</h2>
+      <div id="googleSignInDiv"></div>
+
+      <div class="footer">
+        <p>Don't have an account? <a href="#">Create one here</a></p>
+      </div>
+    </div>
+
+    <script>
+      function handleCredentialResponse(response) {
+        const data = jwt_decode(response.credential);
+
+        // Save user data in local storage
+        localStorage.setItem("userName", data.name);
+        localStorage.setItem("userEmail", data.email);
+        localStorage.setItem("userPic", data.picture);
+
+        // Redirect to index.html after successful login
+        window.location.href = "index.html";
+      }
+
+      window.onload = function () {
+        google.accounts.id.initialize({
+          client_id: "501199379640-ikf9r969m5le8rljh68jcpe349d4m1rv.apps.googleusercontent.com",
+          callback: handleCredentialResponse,
+        });
+
+        google.accounts.id.renderButton(
+          document.getElementById("googleSignInDiv"),
+          { theme: "outline", size: "large" }
+        );
+      };
+    </script>
+  </body>
+</html>
